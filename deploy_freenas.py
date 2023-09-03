@@ -323,6 +323,46 @@ if APPS_ENABLED:
             print(f"Failed setting certificate for {app['name']}")
             print(r)
             sys.exit(1)
+    elif config.get('certificate', False):
+      print(f"Modifying {app['name']} certificate property to use the new certificate")
+      # Update the TLS certificate ID
+      app_cert_id = config.get('certificate')
+
+      if APPS_ONLY_MATCHING_SAN:
+        # Only update certs which have the same sans as the new one 
+        for current_cert_data in cert_list:
+          if current_cert_data['id'] == app_cert_id:
+            if sorted(current_cert_data['san']) == sorted(new_cert_data['san']):
+
+              config['certificate'] = cert_id
+
+              r = session.put(
+                BASE_URL + f'/api/v2.0/chart/release/id/{chart_id}',
+                verify=VERIFY,
+                data=json.dumps({
+                  'values': config
+                }))
+              if r.status_code == 200:
+                print(f"Setting certificate for {app['name']} Successful!")
+              else:
+                print(f"Failed setting certificate for {app['name']}")
+                print(r)
+                sys.exit(1)
+              break
+      else:
+        config['certificate'] = cert_id
+        r = session.put(
+          BASE_URL + f'/api/v2.0/chart/release/id/{chart_id}',
+          verify=VERIFY,
+          data=json.dumps({
+          'values': config
+          }))
+        if r.status_code == 200:
+          print(f"Setting certificate for {app['name']} Successful!")
+        else:
+          print(f"Failed setting certificate for {app['name']}")
+          print(r)
+          sys.exit(1)
 
 if UI_CERTIFICATE_ENABLED:
   # Reload nginx with new cert
